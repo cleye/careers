@@ -27,16 +27,18 @@ JOBS = (
 
 
 TS_CONTENT = '''
-type Profession = {
+export type EstimatedSalary = {
+  percentile10: string;
+  percentile25: string;
+  median: string;
+  percentile75: string;
+  percentile90: string;
+};
+
+export type Profession = {
   name: string;
   description: string;
-  estimatedSalary: {
-      percentile10: string;
-      percentile25: string;
-      median: string;
-      percentile75: string;
-      percentile90: string;
-  }[];
+  estimatedSalary: EstimatedSalary[];
   lastReviewed: string;
 }
 
@@ -74,6 +76,9 @@ if __name__ == "__main__":
 					json_object.pop(key)
 				for key in ["@type", "name", "currency", "duration"]:
 					json_object["estimatedSalary"][0].pop(key)
+				
+				json_object["estimatedSalary"] = json_object["estimatedSalary"][0]
+				# TODO parse numerical strings
 
 				# Print the JSON object
 				salaries.append(json_object)
