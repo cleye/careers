@@ -1,5 +1,5 @@
 
-type Profession = {
+export type Profession = {
   name: string;
   description: string;
   estimatedSalary: {
