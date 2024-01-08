@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 import { PROFESSIONS, type Profession, type EstimatedSalary } from '../salaries';
 import Multiselect from 'vue-multiselect';
 import { Line } from 'vue-chartjs';
-import { Chart as ChartJS, Ticks, Title, Tooltip, Legend, PointElement, LineElement, CategoryScale, LinearScale, type ChartData, type ChartOptions, type Point } from 'chart.js';
+import { Chart as ChartJS, Ticks, Colors, Title, Tooltip, Legend, PointElement, LineElement, CategoryScale, LinearScale, type ChartData, type ChartOptions, type Point } from 'chart.js';
 
 
-ChartJS.register(Title, Tooltip, Legend, PointElement, LineElement, CategoryScale, LinearScale);
+ChartJS.register(Title, Tooltip, Legend, Colors, PointElement, LineElement, CategoryScale, LinearScale);
 
 
-let value = ref("");
+let value: Ref<Profession[]> = ref([]);
 const selectedOption = ref('');
 let options = ref(PROFESSIONS);//.map(p=>p.name));
 
@@ -42,6 +42,9 @@ const p: Profession = {
 const chartOptions: ChartOptions<"line"> = {
   responsive: true,
   animation: false,
+  plugins: {
+    colors: {enabled: true, forceOverride: true}
+  },
   scales: {
     x: {
       type: "linear",
@@ -57,24 +60,23 @@ const chartOptions: ChartOptions<"line"> = {
         display: true
       },
       ticks: {
-          callback: (value: any, index: any, ticks: any) => '$' + Intl.NumberFormat().format(value) // Ticks.formatters.numeric.apply(this, [value, index, ticks])
+          callback: (value: any, index: any, ticks: any) => '$' + Intl.NumberFormat().format(value)
       }
     }
   }
 };
 
-const chartData = {
+
+let chartData: Ref<ChartData<"line">> = computed(() => ({
     labels: labels,
-    datasets: [{
-      label: p.name,
-      data: salaryPlot(p),
-      fill: false,
-      borderColor: 'rgb(75, 192, 192)',
+    datasets: value.value.map(v => ({
+      label: v.name,
+      data: salaryPlot(v),
+      // fill: false,
+      // borderColor: 'rgb(75, 192, 192)',
       tension: 0.1
-    }]
-};
-
-
+    }))
+}));
 </script>
 
 
@@ -102,11 +104,9 @@ const chartData = {
       :options="chartOptions"
       :data="chartData" />
 
-    <div v-if="value">
+    <!-- <div v-if="value">
       <pre>{{ value }}</pre>
-    </div>
-    <p v-else>No option selected.</p>
+    </div> -->
+    <!-- <p v-else>No option selected.</p> -->
   </main>
 </template>
-
-<!-- <style src="vue-multiselect/dist/vue-multiselect.min.css"></style> -->
