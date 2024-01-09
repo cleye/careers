@@ -3,12 +3,17 @@
 
 body {
   font-family: Rubik;
+  margin: 0;
 }
 
 #app {
   margin: 0;
   padding: 24px;
   font-weight: normal;
+}
+
+h1 {
+  margin-top: 0;
 }
 
 a,

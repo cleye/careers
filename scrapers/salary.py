@@ -2,92 +2,104 @@ import requests
 import json
 from bs4 import BeautifulSoup, Comment
 
-JOBS = (
+ACADEMIC_JOBS = (
     "Software Developer",
     "Registered Nurse",
-    "Sales Representative",
     "School Teacher",
     "Accountant",
     "Medical Doctor",
-    "Customer Service Representative",
-    "Marketing Manager",
-    "Electrician",
-    "Administrative Assistant",
+    "Physiotherapist",
     "Civil Engineer",
-    "Retail Salesperson",
-    "Financial Analyst",
-    "Human Resources Specialist",
     "Graphic Designer",
+    "Mechanical Engineer",
+    "Data Scientist"
+)
+
+TRADE_JOBS = (
+    "Chef",
+	"Plumber",
     "Truck Driver",
     "Police Officer",
-    "Mechanical Engineer",
-    "Chef",
-    "Data Scientist",
+    "Retail Salesperson",
+    "Electrician"
 )
 
 
 TS_CONTENT = '''
 export type EstimatedSalary = {
-  percentile10: string;
-  percentile25: string;
-  median: string;
-  percentile75: string;
-  percentile90: string;
+  percentile10: number;
+  percentile25: number;
+  median: number;
+  percentile75: number;
+  percentile90: number;
 };
 
-export type Profession = {
+type ProfessionBase = {
   name: string;
   description: string;
-  estimatedSalary: EstimatedSalary[];
+  estimatedSalary: EstimatedSalary;
   lastReviewed: string;
-}
+};
+
+type AcademicTuition = {
+  tuition?: {
+    years: number,
+    fees: number
+  }
+};
+
+type TradeApprenticeship = {
+  apprenticeship?: {
+    years: number,
+    income: number
+  }
+};
+
+export type Profession = (ProfessionBase & {type: "ACADEMIC"} & AcademicTuition) | (ProfessionBase & {type: "TRADE"} & TradeApprenticeship);
 
 export const PROFESSIONS: Profession[] = %s;
 '''
 
 
-if __name__ == "__main__":
-	salaries = []
+def get_job_json(job_name, job_type):
+	print("Obtaining data for profession:", job_name)
+	job_query = job_name.replace(" ", "+")
+	req = requests.get(f"https://au.talent.com/salary?job={job_query}")
+	soup = BeautifulSoup(req.content, 'html.parser')
+	comment = soup.find(text=lambda text: isinstance(text, Comment) and "Estimaded Salary schema" in text)
+	if comment:
+		script_tag = comment.find_next('script', {'type': 'application/ld+json'})
 
-	for job in JOBS:
-		job_query = job.replace(" ", "+")
-		req = requests.get(f"https://au.talent.com/salary?job={job_query}")
+		if script_tag:
+			json_text = script_tag.string.strip()
+			json_object = json.loads(json_text)
 
-		# Parse the HTML content
-		soup = BeautifulSoup(req.content, 'html.parser')
+			json_object["lastReviewed"] = json_object["mainEntityOfPage"]["lastReviewed"]
+			for key in ("@context", "@type", "mainEntityOfPage", "occupationLocation"):
+				json_object.pop(key)
+			for key in ("@type", "name", "currency", "duration"):
+				json_object["estimatedSalary"][0].pop(key)
+			
+			# parse numeric strings to 2 decimal places
+			json_object["estimatedSalary"] = json_object["estimatedSalary"][0]
+			for key in ("percentile10", "percentile25", "median", "percentile75", "percentile90"):
+				json_object["estimatedSalary"][key] = round(float(json_object["estimatedSalary"][key]), 2)
 
-		# Find the comment
-		comment = soup.find(text=lambda text: isinstance(text, Comment) and "Estimaded Salary schema" in text)
+			json_object["type"] = job_type
 
-		if comment:
-			# Get the script tag following the comment
-			script_tag = comment.find_next('script', {'type': 'application/ld+json'})
-
-			if script_tag:
-				# Extract the text content of the script tag
-				json_text = script_tag.string.strip()
-
-				# Load the JSON object
-				json_object = json.loads(json_text)
-
-				# Reformat JSON
-				json_object["lastReviewed"] = json_object["mainEntityOfPage"]["lastReviewed"]
-				for key in ["@context", "@type", "mainEntityOfPage", "occupationLocation"]:
-					json_object.pop(key)
-				for key in ["@type", "name", "currency", "duration"]:
-					json_object["estimatedSalary"][0].pop(key)
-				
-				json_object["estimatedSalary"] = json_object["estimatedSalary"][0]
-				# TODO parse numerical strings
-
-				# Print the JSON object
-				salaries.append(json_object)
-			else:
-				print("No script tag found after the comment.")
+			return json_object
 		else:
-			print("Comment not found in the HTML content.")
+			print("No script tag found after the comment.", job_name)
+	else:
+		print("Comment not found in the HTML content.", job_name)
 
-	# Convert Python dict to JavaScript-like object syntax
+
+if __name__ == "__main__":
+	salaries = (
+		[get_job_json(job, "ACADEMIC") for job in ACADEMIC_JOBS] + 
+		[get_job_json(job, "TRADE") for job in TRADE_JOBS]
+	)
+
 	javascript_content = TS_CONTENT % json.dumps(salaries, indent=2)
 
 	# Write to a JavaScript file
