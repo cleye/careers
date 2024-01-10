@@ -28,13 +28,15 @@ function salaryPlot(profession: Profession) {
   if (profession.type == "ACADEMIC") {
     const {years, fees} = profession.tuition;
     return [
-      ...Array(years+1).fill(0).map((_, index) => -index * fees / years),
+      0,
+      ...Array(years).fill(0).map((_, index) => -(index+1) * fees / years),
       ...Array(YEARS-years).fill(0).map((_, index) => (index+1) * profession.estimatedSalary.median - fees)
     ];
   } else {
     const {years, income} = profession.apprenticeship;
     return [
-      ...Array(years+1).fill(0).map((_, index) => index * income),
+      0,
+      ...Array(years).fill(0).map((_, index) => (index+1) * income),
       ...Array(YEARS-years).fill(0).map((_, index) => (index+1) * profession.estimatedSalary.median + income * years)
     ];
   }
