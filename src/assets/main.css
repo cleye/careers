@@ -4,16 +4,35 @@
 body {
   font-family: Rubik;
   margin: 0;
+  font-weight: 300;
 }
 
 #app {
   margin: 0;
   padding: 24px;
-  font-weight: normal;
+}
+
+h1 {
+  text-align: center;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 h1 {
   margin-top: 0;
+}
+
+.profession-grid {
+  display: grid;
+  grid-template-columns: 200px 160px 1fr;
+  padding: 16px 8px;
+  border-bottom: 1px solid #aaa;
 }
 
 a,

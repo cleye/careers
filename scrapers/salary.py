@@ -42,14 +42,14 @@ type ProfessionBase = {
 };
 
 type AcademicTuition = {
-  tuition?: {
+  tuition: {
     years: number,
     fees: number
   }
 };
 
 type TradeApprenticeship = {
-  apprenticeship?: {
+  apprenticeship: {
     years: number,
     income: number
   }
@@ -83,9 +83,20 @@ def get_job_json(job_name, job_type):
 			# parse numeric strings to 2 decimal places
 			json_object["estimatedSalary"] = json_object["estimatedSalary"][0]
 			for key in ("percentile10", "percentile25", "median", "percentile75", "percentile90"):
-				json_object["estimatedSalary"][key] = round(float(json_object["estimatedSalary"][key]), 2)
+				json_object["estimatedSalary"][key] = round(float(json_object["estimatedSalary"][key]))
 
 			json_object["type"] = job_type
+
+			if job_type == "ACADEMIC":
+				json_object["tuition"] = {
+					"years": 0,
+					"fees": 0
+				}
+			elif job_type == "TRADE":
+				json_object["apprenticeship"] = {
+					"years": 0,
+					"income": 0
+				}
 
 			return json_object
 		else:

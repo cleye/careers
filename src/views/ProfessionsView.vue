@@ -24,7 +24,20 @@ let options = ref([
 const YEARS = 30;
 
 function salaryPlot(profession: Profession) {
-  return Array(YEARS+1).fill(0).map((_, index) => (index) * profession.estimatedSalary.median)
+  console.log("Plotting profession", profession);
+  if (profession.type == "ACADEMIC") {
+    const {years, fees} = profession.tuition;
+    return [
+      ...Array(years+1).fill(0).map((_, index) => -index * fees / years),
+      ...Array(YEARS-years).fill(0).map((_, index) => (index+1) * profession.estimatedSalary.median - fees)
+    ];
+  } else {
+    const {years, income} = profession.apprenticeship;
+    return [
+      ...Array(years+1).fill(0).map((_, index) => index * income),
+      ...Array(YEARS-years).fill(0).map((_, index) => (index+1) * profession.estimatedSalary.median + income * years)
+    ];
+  }
 }
 
 const labels = Array(YEARS+1).fill(0).map((_, index) => index);
@@ -34,7 +47,8 @@ const chartOptions: ChartOptions<"line"> = {
   responsive: true,
   animation: false,
   plugins: {
-    colors: {enabled: true, forceOverride: true}
+    colors: {enabled: true, forceOverride: true},
+    legend: {position: "bottom"}
   },
   scales: {
     x: {
@@ -73,7 +87,13 @@ let chartData: Ref<ChartData<"line">> = computed(() => ({
 
 <template>
   <main>
-    <h1>Select a profession</h1>
+    <h1>Career salary estimator</h1>
+
+    <div id="chart">
+      <Line
+        :options="chartOptions"
+        :data="chartData" />
+    </div>
 
     <multiselect
       v-model="value"
@@ -82,26 +102,28 @@ let chartData: Ref<ChartData<"line">> = computed(() => ({
       :close-on-select="true"
       :show-labels="true"
       :multiple="true"
+      :taggable="false"
       label="name"
       track-by="name"
       group-values="professions"
       group-label="type"
       :group-select="false"
-      placeholder="Pick a profession"></multiselect>
+      placeholder="Pick a profession">
+    </multiselect>
+    
+    <div>
+      <div class="profession-grid" v-show="value.length > 0" style="font-weight: normal;">
+        <div>Profession</div>
+        <div>Median salary</div>
+        <div>Training</div>
+        <!-- <div>Actions</div> -->
+      </div>
 
-    <!-- <select v-model="selectedOption">
-      <option v-for="(profession, index) in PROFESSIONS" :key="index" :value="profession">
-        {{ profession.name }}
-      </option>
-    </select> -->
-
-    <Line
-      :options="chartOptions"
-      :data="chartData" />
-
-
-    <ProfessionPlot v-for="plot in value" :profession="plot">
-    </ProfessionPlot>
+      <div v-for="(plot, index) in value">
+        <ProfessionPlot :profession="plot" v-model="value[index]">
+        </ProfessionPlot>
+      </div>
+    </div>
 
     <!-- <div v-if="value">
       <pre>{{ value }}</pre>
@@ -109,3 +131,9 @@ let chartData: Ref<ChartData<"line">> = computed(() => ({
     <!-- <p v-else>No option selected.</p> -->
   </main>
 </template>
+
+<style scoped>
+/* #chart {
+  height: 500px;
+} */
+</style>
